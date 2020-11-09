@@ -14,14 +14,17 @@ let SongSchema = new mongoose.Schema(
     type: String,
     required: true,
   },
-  genre: [{
-    type: String,
-    required: true
-  }],
+  // genre: [{
+  //   type: String,
+  //   required: true
+  // }],
   imageUrl: {
     type: String,
     required: true
   }, 
+  sample: {
+    type: String,
+  },
 },
 )
 

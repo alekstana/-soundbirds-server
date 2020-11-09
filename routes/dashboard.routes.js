@@ -4,6 +4,10 @@ const express = require('express')
 const SpotifyWebApi = require('spotify-web-api-node');
 
 const router = express.Router()
+const { isLoggedIn } = require('../helpers/auth-helper'); // middleware to check if user is loggedIn
+const UserModel = require('../models/User.model');
+const SongModel = require('../models/Song.model');
+
 
 // setting the spotify-api goes here:
 const spotifyApi = new SpotifyWebApi({
@@ -19,7 +23,7 @@ spotifyApi
 
  // Routes
 
-/// 1. Finding music
+/// Finding music
 router.post('/music-search', (req, res) => {
   let name = req.body.name
   let option = req.body.context;
@@ -47,39 +51,60 @@ router.post('/music-search', (req, res) => {
 })
 
 
-// /// 2. Finding tracks
-// router.post('/tracks-search', (req, res) => {
-//   let name = req.body.name
-//   spotifyApi.searchTracks(name)
-//    .then((data) => {
-//     let response = data.body
-//     res.status(200).json(response)
-//    })
-//    .catch((err) => {
-//     console.log(err)
-//     res.status(500).json({
-//          error: 'The error while searching artists occurred:',
-//          message: err
-//     })
-//   }) 
-// })
+
+///  Storing song in the database
+router.post('/add-track', isLoggedIn, (req, res) => {
+  console.log(req.body.track)
+  let track = req.body.track
+  let id = req.session.loggedInUser._id
+  SongModel.create({spotifyId: track.id, name:track.name, artist: track.artists[0].name, imageUrl: track.album.images[0].url, sample: track.preview_url })
+      .then((song) => {
+        UserModel.findByIdAndUpdate(id, {$push: {myPlaylist: song._id}})
+        .then(() => {
+          res.status(200).json()
+        })
+      })
+      .catch((err) => {
+         console.log(err)
+      })
+      
+})
 
 
-/// 3. Finding top tracks from one artist
-router.get('/find-tracks/:artistId', (req, res) => {
-  let id = req.params.artistId
-  spotifyApi.getArtistTopTracks(`${id}` ,'DE')
-   .then((data) => {
-    let response = data.body
-    res.status(200).json(response)
-   })
-   .catch((err) => {
-    console.log(err)
-    res.status(500).json({
-         error: 'The error while searching artists tracks occurred:',
-         message: err
+///Showing the Playlist
+router.post('/show-playlist', isLoggedIn, (req,res) => {
+  let id = req.session.loggedInUser._id
+  console.log(id)
+  UserModel.findById(id)
+    .populate('myPlaylist')
+    .then((data) => {
+      res.status(200).json(data.myPlaylist)
     })
-  }) 
+    .catch((err) => {
+      console.log("Couldn't fetch a playlist", err)
+   })
+
+})
+
+
+///Showing matches
+router.post('/my-matches', isLoggedIn, (req,res) => {
+  let id = req.session.loggedInUser._id
+  console.log(id)
+  UserModel.findById(id)
+    .populate('myPlaylist')
+    .then((data) => {
+    //  console.log(data.myPlaylist)
+     let mySongs = data.myPlaylist
+     console.log(mySongs[0])
+     let allSongId = mySongs.map(song => song._id);
+     console.log(allSongId)
+    })
+    
+    .catch((err) => {
+      console.log("Couldn't fetch a User", err)
+   })
+
 })
 
 
