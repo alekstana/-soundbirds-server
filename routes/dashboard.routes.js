@@ -19,14 +19,23 @@ spotifyApi
 
  // Routes
 
-/// 1. Finding artists
-router.post('/artist-search', (req, res) => {
-  let artistName = req.body.name
-  console.log(artistName)
-  spotifyApi.searchArtists(artistName)
+/// 1. Finding music
+router.post('/music-search', (req, res) => {
+  let name = req.body.name
+  let option = req.body.context;
+  let query = req.body.name
+  if (!option) {
+    if (option == 'artist') {
+      query = 'artist:' + name;
+    }
+    if (option == 'track') {
+      query = 'track:' + name;
+    }
+  }
+
+  spotifyApi.searchTracks(query)
    .then((data) => {
-    let artist = data.body.artists.items
-    res.status(200).json(artist)
+    res.status(200).json(data)
    })
    .catch((err) => {
     console.log(err)
@@ -36,6 +45,43 @@ router.post('/artist-search', (req, res) => {
     })
   }) 
 })
+
+
+// /// 2. Finding tracks
+// router.post('/tracks-search', (req, res) => {
+//   let name = req.body.name
+//   spotifyApi.searchTracks(name)
+//    .then((data) => {
+//     let response = data.body
+//     res.status(200).json(response)
+//    })
+//    .catch((err) => {
+//     console.log(err)
+//     res.status(500).json({
+//          error: 'The error while searching artists occurred:',
+//          message: err
+//     })
+//   }) 
+// })
+
+
+/// 3. Finding top tracks from one artist
+router.get('/find-tracks/:artistId', (req, res) => {
+  let id = req.params.artistId
+  spotifyApi.getArtistTopTracks(`${id}` ,'DE')
+   .then((data) => {
+    let response = data.body
+    res.status(200).json(response)
+   })
+   .catch((err) => {
+    console.log(err)
+    res.status(500).json({
+         error: 'The error while searching artists tracks occurred:',
+         message: err
+    })
+  }) 
+})
+
 
 
 

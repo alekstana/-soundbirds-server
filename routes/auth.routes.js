@@ -132,6 +132,11 @@ router.post('/signin', (req, res) => {
 });
 
 
+router.get('/user', (req, res) => {
+  let user = req.session.loggedInUser
+   res.status(200).json(user)
+})
+
 router.post('/logout', (req, res) => {
   req.session.destroy();
   res
