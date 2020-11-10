@@ -12,10 +12,10 @@ const MongoStore = require('connect-mongo')(session);
 // const SpotifyWebApi = require('spotify-web-api-node');
 
 
-
+let MONGODB_URL = process.env.MONGODB_URL || "mongodb://localhost/soundbirds-server"
 
 mongoose
-  .connect('mongodb://localhost/soundbirds-server', {useNewUrlParser: true})
+  .connect( MONGODB_URL, {useNewUrlParser: true})
   .then(x => {
     console.log(`Connected to Mongo! Database name: "${x.connections[0].name}"`)
   })
