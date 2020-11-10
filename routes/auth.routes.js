@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 
 const bcrypt = require('bcryptjs');
+const uploader = require('../config/cloudinary.config.js');
 
 const UserModel = require('../models/User.model');
 
@@ -143,6 +144,46 @@ router.post('/logout', (req, res) => {
   .status(200).json({}) //  No Content
 })
 
+
+
+
+router.post(`/edit-profile`, (req, res) => {
+  const { name, aboutMe, imageUrl } = req.body;
+  let id = req.session.loggedInUser._id
+
+  if (!name) {
+    res.status(500).json({
+        error: 'Please enter your name',
+   })
+  }
+
+  UserModel.findByIdAndUpdate(id, {$set: {name, aboutMe, imageUrl}})
+  .then(() => {
+    UserModel.findById(id) 
+    .then((userData) => {
+      console.log(userData)
+      req.session.loggedInUser = userData
+      res.status(200).json(userData)
+    })
+  })
+    .catch((err) => {
+      console.log(err)
+      res.status(500).json({
+           error: "Could not update the user",
+           message: err
+      })
+    }) 
+})
+
+
+router.post('/upload', uploader.single("imageUrl"), (req, res, next) => {
+  console.log('file is: ', req.file)
+ if (!req.file) {
+   next(new Error('No file uploaded!'));
+   return;
+ }
+ res.json({ image: req.file.path });
+})
 
 
 

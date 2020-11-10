@@ -11,6 +11,9 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);
 // const SpotifyWebApi = require('spotify-web-api-node');
 
+
+
+
 mongoose
   .connect('mongodb://localhost/soundbirds-server', {useNewUrlParser: true})
   .then(x => {
@@ -19,6 +22,10 @@ mongoose
   .catch(err => {
     console.error('Error connecting to mongo', err)
   });
+
+
+require('./config/db.config')
+require('./config/cloudinary.config.js')
 
 const app_name = require('./package.json').name;
 const debug = require('debug')(`${app_name}:${path.basename(__filename).split('.')[0]}`);

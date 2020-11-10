@@ -18,6 +18,9 @@ let UserSchema = new mongoose.Schema(
   imageUrl: {
     type: String,
   }, 
+  aboutMe: {
+    type: String,
+  }, 
   soundbirdId: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user'}],

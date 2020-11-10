@@ -54,7 +54,7 @@ router.post('/music-search', (req, res) => {
 
 ///  Storing song in the database
 router.post('/add-track', isLoggedIn, (req, res) => {
-  console.log(req.body.track)
+  // console.log(req.body.track)
   let track = req.body.track
   let id = req.session.loggedInUser._id
   SongModel.create({spotifyId: track.id, name:track.name, artist: track.artists[0].name, imageUrl: track.album.images[0].url, sample: track.preview_url })
@@ -74,7 +74,68 @@ router.post('/add-track', isLoggedIn, (req, res) => {
 ///Showing the Playlist
 router.post('/show-playlist', isLoggedIn, (req,res) => {
   let id = req.session.loggedInUser._id
-  console.log(id)
+  // console.log(id)
+  UserModel.findById(id)
+    .populate('myPlaylist')
+    .then((data) => {
+      res.status(200).json(data.myPlaylist)
+    })
+    .catch((err) => {
+      console.log("Couldn't fetch a playlist", err)
+   })
+
+})
+
+///Deleting song from MY playlist
+router.post('/delete-song', isLoggedIn, (req,res) => {
+   let songId = req.body.songId
+   let userId = req.session.loggedInUser._id
+
+      UserModel.findByIdAndUpdate(userId, {$pull: {myPlaylist: songId } } )
+      .then(() => {
+        UserModel.findById(userId)  
+          .populate('myPlaylist')
+          .then((user)=> {
+            res.status(200).json(user.myPlaylist)
+          })
+      })
+      .catch((err) => {
+        console.log("Couldn't fetch a playlist", err)
+      })
+})
+
+
+
+///Adding song ty MY playlist from my Matches playlist
+router.post('/add-matchsong-to-myplaylist', isLoggedIn, (req,res) => {
+  let songId = req.body.songId
+  let userId = req.session.loggedInUser._id
+ console.log(songId)
+ console.log(userId)
+     UserModel.findByIdAndUpdate(userId, {$push: {myPlaylist: songId } } )
+     .then(() => {
+       UserModel.findById(userId)  
+         .populate('myPlaylist')
+         .then((user)=> {
+          console.log("song added to my playlist in the database");
+          //  res.status(200).json(user.myPlaylist)
+         })
+     })
+     .catch((err) => {
+       console.log("Couldn't fetch a playlist", err)
+     })
+
+})
+
+
+
+
+
+///Showing the Playlist of the Match
+router.post('/show-match-playlist', isLoggedIn, (req,res) => {
+  let id = req.body.match._id
+
+  // console.log(id)
   UserModel.findById(id)
     .populate('myPlaylist')
     .then((data) => {
@@ -87,18 +148,40 @@ router.post('/show-playlist', isLoggedIn, (req,res) => {
 })
 
 
+
+
 ///Showing matches
 router.post('/my-matches', isLoggedIn, (req,res) => {
   let id = req.session.loggedInUser._id
-  console.log(id)
+  // console.log(id)
   UserModel.findById(id)
     .populate('myPlaylist')
     .then((data) => {
     //  console.log(data.myPlaylist)
      let mySongs = data.myPlaylist
-     console.log(mySongs[0])
-     let allSongId = mySongs.map(song => song._id);
+    //  console.log(mySongs[0])
+     let allSongId = mySongs.map(song => song.spotifyId);
      console.log(allSongId)
+        UserModel.find()
+          .populate('myPlaylist')
+          .then((data) => {
+            let matches = []
+            allSongId.forEach((mySongId) => {
+              data.forEach((eachUser) => {
+                eachUser.myPlaylist.forEach((eachSong) => {
+
+                if(eachSong.spotifyId === mySongId) {
+                  if (!matches.includes(eachUser) && JSON.stringify(eachUser._id) !== JSON.stringify(req.session.loggedInUser._id)) matches.push(eachUser)
+                }
+
+                })
+
+              })
+            })
+
+            console.log(matches)
+            res.status(200).json(matches)
+          })
     })
     
     .catch((err) => {
