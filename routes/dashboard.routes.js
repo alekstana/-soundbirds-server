@@ -110,15 +110,15 @@ router.post('/delete-song', isLoggedIn, (req,res) => {
 router.post('/add-matchsong-to-myplaylist', isLoggedIn, (req,res) => {
   let songId = req.body.songId
   let userId = req.session.loggedInUser._id
- console.log(songId)
- console.log(userId)
+//  console.log(songId)
+//  console.log(userId)
      UserModel.findByIdAndUpdate(userId, {$push: {myPlaylist: songId } } )
      .then(() => {
        UserModel.findById(userId)  
          .populate('myPlaylist')
          .then((user)=> {
           console.log("song added to my playlist in the database");
-          //  res.status(200).json(user.myPlaylist)
+           res.status(200).json(user.myPlaylist)
          })
      })
      .catch((err) => {

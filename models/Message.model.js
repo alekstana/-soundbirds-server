@@ -15,4 +15,4 @@ let MessageSchema = new mongoose.Schema(
 
 let MessageModel = mongoose.model('message', MessageSchema)
 
-module.exports = MessageModel
+module.exports = MessageModel;

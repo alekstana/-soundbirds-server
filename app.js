@@ -7,8 +7,9 @@ const mongoose     = require('mongoose');
 const logger       = require('morgan');
 const path         = require('path');
 const cors         = require('cors')
-const session = require('express-session');
-const MongoStore = require('connect-mongo')(session);
+const session      =  require('express-session');
+const MongoStore   =  require('connect-mongo')(session);
+
 // const SpotifyWebApi = require('spotify-web-api-node');
 
 
@@ -81,6 +82,13 @@ app.use(favicon(path.join(__dirname, 'public', 'images', 'favicon.ico')));
 app.locals.title = 'SoundBirds';
 
 
+
+
+
+
+
+
+
 //My Routes
 
 const authRoutes = require('./routes/auth.routes')
@@ -89,6 +97,7 @@ app.use('/api', authRoutes);
 
 const dashboardRoutes = require('./routes/dashboard.routes')
 app.use('/api', dashboardRoutes);
+
 
 
 

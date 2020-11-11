@@ -4,6 +4,12 @@ const http = require('http');
 
 let app = require('../app.js');
 
+const socket = require("socket.io");
+const MessageModel = require('../models/Message.model');
+const { isLoggedIn } = require('../helpers/auth-helper'); // middleware to check if user is loggedIn
+
+
+
 // catch 404 and render a not-found.hbs template
 app.use((req, res, next) => {
   res.status(404);
@@ -41,6 +47,46 @@ server.on('error', error => {
   }
 });
 
-server.listen(process.env.PORT, () => {
+// server.listen(process.env.PORT, () => {
+//   console.log(`Listening on http://localhost:${process.env.PORT}`);
+// });
+
+
+const socketServer =  server.listen(process.env.PORT, () => {
   console.log(`Listening on http://localhost:${process.env.PORT}`);
+});
+
+
+io = socket(socketServer);
+
+io.on("connection", (socket) => {
+  console.log(socket.id);
+
+  socket.on("join_room", (data) => {
+    socket.join(data);
+    console.log("User Joined Room: " + data);
+  });
+
+  socket.on("send_message", (messageContent) => {
+    
+    console.log(messageContent)
+    const {sender, receiver ,message}  = messageContent.content
+    MessageModel.create({ body: message, sender, receiver })
+        .then(() => {
+          MessageModel.findOne({sender:sender._id})
+          .then((data) => {
+            res.status(200).json(data)
+          })
+        })
+        .catch((err) => {
+           console.log("couldnt create a message",err)
+        })
+
+
+    socket.to(data.room).emit("receive_message", data.content);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("USER DISCONNECTED");
+  });
 });
