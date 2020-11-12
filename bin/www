@@ -1,44 +1,44 @@
 #!/usr/bin/env node
 
-const http = require('http');
+const http = require("http");
 
-let app = require('../app.js');
-const mongoose = require('mongoose')
+let app = require("../app.js");
+const mongoose = require("mongoose");
 const socket = require("socket.io");
-const MessageModel = require('../models/Message.model');
-const { isLoggedIn } = require('../helpers/auth-helper'); // middleware to check if user is loggedIn
-
-
+const MessageModel = require("../models/Message.model");
+const { isLoggedIn } = require("../helpers/auth-helper"); // middleware to check if user is loggedIn
 
 // catch 404 and render a not-found.hbs template
 app.use((req, res, next) => {
   res.status(404);
-  res.render('not-found');
+  res.render("not-found");
 });
 
 app.use((err, req, res, next) => {
   // always log the error
-  console.error('ERROR', req.method, req.path, err);
+  console.error("ERROR", req.method, req.path, err);
 
   // only render if the error ocurred before sending the response
   if (!res.headersSent) {
     res.status(500);
-    res.render('error');
+    res.render("error");
   }
 });
 
 let server = http.createServer(app);
 
-server.on('error', error => {
-  if (error.syscall !== 'listen') { throw error }
+server.on("error", (error) => {
+  if (error.syscall !== "listen") {
+    throw error;
+  }
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
-    case 'EACCES':
+    case "EACCES":
       console.error(`Port ${process.env.PORT} requires elevated privileges`);
       process.exit(1);
       break;
-    case 'EADDRINUSE':
+    case "EADDRINUSE":
       console.error(`Port ${process.env.PORT} is already in use`);
       process.exit(1);
       break;
@@ -51,57 +51,131 @@ server.on('error', error => {
 //   console.log(`Listening on http://localhost:${process.env.PORT}`);
 // });
 
-
-const socketServer =  server.listen(process.env.PORT, () => {
+const socketServer = server.listen(process.env.PORT, () => {
   console.log(`Listening on http://localhost:${process.env.PORT}`);
 });
-
 
 io = socket(socketServer);
 
 io.on("connection", (socket) => {
-
-
   // socket.emit('rooms', )
   socket.on("join_room", (message) => {
-    console.log(message)
-    MessageModel.findOne({sender: message.sender._id, receiver: message.receiver._id})
-      .then((msgs) => {
-        console.log('HEEEEERRRREEE', msgs)
-        if (msgs) {
-          socket.join(msgs.roomId)
-          socket.emit('updateRoomId', msgs.roomId)  
-        }
-        else {
-          MessageModel.findOne({receiver: message.sender._id, sender: message.receiver._id})
-          .then((msgs1) => {
-            if (msgs1) {
-              socket.join(msgs1.roomId)
-              socket.emit('updateRoomId', msgs1.roomId)  
-            } 
-            else {
-              socket.join(message.room);
-            }
-          })
-        }
-      })
+    console.log('Socket ', message.receiver)
+    let receiverId = message.receiver.selectedMatch._id
     
+    MessageModel.find({
+      receiver: receiverId,
+    }).then((msgs) => {
+      if (msgs.length) {
+        console.log('Inside if')
+        socket.join(msgs[0].roomId);
+        console.log('Room is', msgs[0].roomId)
+        socket.emit("updateRoomId", msgs[0].roomId);
+        MessageModel.find({
+          sender: message.sender._id,
+          receiver: message.receiver.selectedMatch._id,
+        })
+        .populate('sender')
+        .populate('receiver')
+        .then((allMessages) => {
+          MessageModel.find({
+            receiver: message.sender._id,
+            sender: message.receiver.selectedMatch._id,
+          })
+          .populate('sender')
+          .populate('receiver')
+          .then((allMessages1) => {
+            let merge = [...allMessages, ...allMessages1]
+            console.log('inside merge')
+            merge.sort((a,b) => {
+                if (new Date(a.created_at) < new Date(b.created_at))  {
+                    return 1;
+                }
+                else if (new Date(a.created_at) > new Date(b.created_at)) {
+                  return -1
+                }
+                else {
+                  return 0
+                }
+            })
+            socket.emit("allMessages", merge);
+          })
+        });
+      } else {
+        console.log('Inside else')
+        MessageModel.find({
+          sender: receiverId
+        }).then((msgs1) => {
+          if (msgs1.length) {
+            console.log('Inner if')
+            socket.join(msgs1[0].roomId);
+            console.log('Room is', msgs1[0].roomId)
+            socket.emit("updateRoomId", msgs1[0].roomId);
+            MessageModel.find({
+              sender: message.sender._id,
+              receiver: message.receiver.selectedMatch._id,
+            })
+            .populate('sender')
+            .populate('receiver')
+            .then((allMessages) => {
+              MessageModel.find({
+                receiver: message.sender._id,
+                sender: message.receiver.selectedMatch._id,
+              })
+              .populate('sender')
+              .populate('receiver')
+              .then((allMessages1) => {
+                let merge = [...allMessages, ...allMessages1]
+                console.log('inside merge')
+                merge.sort((a,b) => {
+                    if (new Date(a.created_at) < new Date(b.created_at))  {
+                        return -1;
+                    }
+                    else if (new Date(a.created_at) > new Date(b.created_at)) {
+                      return 1
+                    }
+                    else {
+                      return 0
+                    }
+                })
+                socket.emit("allMessages", merge);
+              })
+            });
+          } else {
+            console.log('Inner else')
+            console.log(message.room);
+            socket.join(message.room);
+          }
+        })
+        .catch((err) => {
+          console.log('crashed', err)
+        })
+      }
+    });
   });
 
   socket.on("send_message", (messageContent) => {
-    
-    console.log(messageContent)
-    const {sender, receiver ,message}  = messageContent.content
-    MessageModel.create({ body: message, sender, receiver , roomId: messageContent.room})
-        .then(() => {
-          socket.to(messageContent.room).emit("receive_message", messageContent.content);
-        })
-        .catch((err) => {
-           console.log("couldnt create a message",err)
-        })
-
-
-    
+    const { sender, receiver, message } = messageContent.content;
+    console.log(messageContent.content)
+    MessageModel.create({
+      body: message,
+      sender,
+      receiver,
+      roomId: messageContent.room,
+    })
+      .then((data) => {
+        MessageModel.findById(data._id)
+          .populate('sender')
+          .populate('receiver')
+          .then((msg) => {
+            socket
+          .to(messageContent.room)
+          .emit("receive_message", msg);
+          })
+      })
+      .catch((err) => {
+        console.log("couldnt create a message", err);
+      });
   });
 
   socket.on("disconnect", () => {

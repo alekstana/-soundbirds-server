@@ -9,7 +9,13 @@ let MessageSchema = new mongoose.Schema(
     ref: 'user'},
   receiver: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'user'}
+    ref: 'user'},
+  },
+  {
+  timestamps: {
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+  }
   }
 )  
 

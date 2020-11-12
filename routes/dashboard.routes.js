@@ -7,7 +7,7 @@ const router = express.Router()
 const { isLoggedIn } = require('../helpers/auth-helper'); // middleware to check if user is loggedIn
 const UserModel = require('../models/User.model');
 const SongModel = require('../models/Song.model');
-
+const MessageModel = require('../models/Message.model');
 
 // setting the spotify-api goes here:
 const spotifyApi = new SpotifyWebApi({
@@ -216,6 +216,33 @@ router.post('/my-matches', isLoggedIn, (req,res) => {
 })
 
 
+// getting all messages
+router.post('/get-all-chats', isLoggedIn, (req,res) => {
+  let id = req.session.loggedInUser._id
+  MessageModel.find({receiver:id})
+  .populate('sender')
+  .then((allMessages) => {
+    let receivers = allMessages.map((message) => {
+      return message.sender.name
+    })
+    MessageModel.find({sender:id})
+    .populate('receiver')
+    .then((allMessages2) => {
+      let receivers2 = allMessages2.map((message) => {
+        return message.receiver.name
+      })
+      let allNames = receivers.concat(receivers2);
+      var uniqueNames = allNames.filter((a, b) => allNames.indexOf(a) === b)
+
+
+    console.log(uniqueNames)
+    res.status(200).json(uniqueNames)
+  })
+  })
+  .catch((err) => {
+    console.log("Couldn't fetch chats", err)
+  })
+})
 
 
 module.exports = router;
