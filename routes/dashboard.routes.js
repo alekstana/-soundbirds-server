@@ -66,25 +66,27 @@ router.post('/add-track', isLoggedIn, (req, res) => {
       })
       .catch((err) => {
          console.log(err)
-      })
-      
+      })    
 })
 
 
-///Showing the Playlist
+// ///Showing the Playlist
 router.post('/show-playlist', isLoggedIn, (req,res) => {
   let id = req.session.loggedInUser._id
   // console.log(id)
   UserModel.findById(id)
     .populate('myPlaylist')
     .then((data) => {
+      console.log(data.myPlaylist)
       res.status(200).json(data.myPlaylist)
     })
     .catch((err) => {
       console.log("Couldn't fetch a playlist", err)
    })
-
 })
+
+
+
 
 ///Deleting song from MY playlist
 router.post('/delete-song', isLoggedIn, (req,res) => {
@@ -106,25 +108,48 @@ router.post('/delete-song', isLoggedIn, (req,res) => {
 
 
 
-///Adding song ty MY playlist from my Matches playlist
+// ///Adding song ty MY playlist from my Matches playlist
+// router.post('/add-matchsong-to-myplaylist', isLoggedIn, (req,res) => {
+//   let songId = req.body.song._id
+//   let userId = req.session.loggedInUser._id
+//      UserModel.findByIdAndUpdate(userId, {$push: {myPlaylist: songId } } )
+//      .then(() => {
+//        UserModel.findById(userId)  
+//          .populate('myPlaylist')
+//          .then((user)=> {
+//            console.log(user.myPlaylist)
+//           console.log("song added to my playlist in the database");
+//            res.status(200).json(user.myPlaylist)
+//          })
+//      })
+//      .catch((err) => {
+//        console.log("Couldn't fetch a playlist", err)
+//      })
+// })
+
+
+///Adding song ty MY playlist from my Matches playlist without dublicates
 router.post('/add-matchsong-to-myplaylist', isLoggedIn, (req,res) => {
-  let songId = req.body.songId
-  let userId = req.session.loggedInUser._id
-//  console.log(songId)
-//  console.log(userId)
-     UserModel.findByIdAndUpdate(userId, {$push: {myPlaylist: songId } } )
-     .then(() => {
+  let spotifyId = req.body.song.spotifyId
+  let databaseSongId = req.body.song._id
+  let userId = req.session.loggedInUser._id     
        UserModel.findById(userId)  
          .populate('myPlaylist')
          .then((user)=> {
-          console.log("song added to my playlist in the database");
-           res.status(200).json(user.myPlaylist)
-         })
-     })
+           let playlist = user.myPlaylist
+           let sortedPlaylist = playlist.filter((song) => song.spotifyId !== spotifyId)
+           console.log(sortedPlaylist)
+            UserModel.findByIdAndUpdate(userId, {myPlaylist: sortedPlaylist} )
+            .then(() => {
+              UserModel.findByIdAndUpdate(userId, {$push: {myPlaylist: databaseSongId }} )
+              .then(() => {
+                console.log("song added to my playlist in the database");          
+                })
+                  })          
      .catch((err) => {
        console.log("Couldn't fetch a playlist", err)
      })
-
+})
 })
 
 
