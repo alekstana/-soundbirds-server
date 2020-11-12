@@ -27,6 +27,7 @@ let UserSchema = new mongoose.Schema(
   myPlaylist: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'song'}]
+    
 },
 )
 

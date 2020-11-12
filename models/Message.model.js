@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 let MessageSchema = new mongoose.Schema(
   {
   body: [String],
+  roomId: String,
   sender: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user'},
@@ -10,7 +11,7 @@ let MessageSchema = new mongoose.Schema(
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user'}
   }
-)
+)  
 
 
 let MessageModel = mongoose.model('message', MessageSchema)
