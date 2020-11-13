@@ -223,19 +223,19 @@ router.post('/get-all-chats', isLoggedIn, (req,res) => {
   .populate('sender')
   .then((allMessages) => {
     let receivers = allMessages.map((message) => {
-      return message.sender.name
+      return message.sender
     })
     MessageModel.find({sender:id})
     .populate('receiver')
     .then((allMessages2) => {
       let receivers2 = allMessages2.map((message) => {
-        return message.receiver.name
+        return message.receiver
       })
       let allNames = receivers.concat(receivers2);
-      var uniqueNames = allNames.filter((a, b) => allNames.indexOf(a) === b)
+     
+      var uniqueNames = [...new Set(allNames.map(item => item))]
+      
 
-
-    console.log(uniqueNames)
     res.status(200).json(uniqueNames)
   })
   })
